@@ -1,19 +1,19 @@
 #!/bin/bash
- 
+
 ########################
 ## Script de ZouZOU
 ########################
 ## Installation: wget -q https://raw.githubusercontent.com/Z0uZOU/Update-WSUS/master/update-wsus.sh -O update-wsus.sh && sed -i -e 's/\r//g' update-wsus.sh && shc -f update-wsus.sh -o update-wsus.bin && chmod +x update-wsus.bin && rm -f *.x.c && rm -f update-wsus.sh
 ## Installation: wget -q https://raw.githubusercontent.com/Z0uZOU/Update-WSUS/master/update-wsus.sh -O update-wsus.sh && sed -i -e 's/\r//g' update-wsus.sh && chmod +x update-wsus.sh
 ## Micro-config
-version="Version: 0.0.0.1" #base du système de mise à jour
+version="Version: 0.0.0.2" #base du système de mise à jour
 description="MAJ du serveur WSUS" #description pour le menu
 description_eng="WSUS Updater" #description pour le menu
 script_github="https://raw.githubusercontent.com/Z0uZOU/Update-WSUS/master/update-wsus.sh" #emplacement du script original
 changelog_github="https://raw.githubusercontent.com/Z0uZOU/Update-WSUS/master/changelog" #emplacement du changelog de ce script
 langue_fr="https://raw.githubusercontent.com/Z0uZOU/Update-WSUS/master/lang/french.lang"
 langue_eng="https://raw.githubusercontent.com/Z0uZOU/Update-WSUS/master/lang/english.lang"
-icone_github="https://raw.githubusercontent.com/Z0uZOU/Update-WSUS/master/.cache-icons/Update-WSUS.png" #emplacement de l'icône du script
+icone_github="https://raw.githubusercontent.com/Z0uZOU/Update-WSUS/master/.cache-icons/update-wsus.png" #emplacement de l'icône du script
 required_repos="" #ajout de repository
 required_tools="cabextract hashdeep wget xmlstarlet trash-cli" #dépendances du script (APT)
 required_tools_pip="" #dépendances du script (PIP)
@@ -112,9 +112,9 @@ for process_travail in $verification_process ; do
     if [[ "$CRON_SCRIPT" != "oui" ]] ; then
       if [[ "$CHECK_MUI" != "" ]]; then
         source $mon_script_langue
-        echo $process_important"$mui_prevent_dupe_task"
+        echo $process_travail"$mui_prevent_dupe_task"
       else
-        echo $process_important" est en cours de fonctionnement, arrêt du script"
+        echo $process_travail" est en cours de fonctionnement, arrêt du script"
       fi
       fin_script=`date`
       if [[ "$CHECK_MUI" != "" ]]; then
@@ -298,7 +298,7 @@ else
   test_crontab=`crontab -l | grep "clean-lock"`
   if [[ "$test_crontab" == "" ]]; then
     crontab -l > mon_cron.txt
-    sed -i '5i@reboot\t\t\tsleep 10 && /opt/scripts/clean-lock.sh' mon_cron.txt
+    sed -i '5i@reboot\t\t\tsleep 10 && /opt/scripts/clean-lock.sh # $mon_script_base' mon_cron.txt
     crontab mon_cron.txt
     rm -f mon_cron.txt
   fi
@@ -440,9 +440,9 @@ if [[ "$compare" != "" ]] ; then
     echo "chmod +x $mon_script_fichier" >> $mon_script_updater
     if [[ "$CHECK_MUI" != "" ]]; then
       source $mon_script_langue
-      eval 'echo "$mui_update_done" >> $mon_script_updater' $mon_log_perso
+      echo "$mui_update_done" >> $mon_script_updater
     else
-      eval 'echo "echo mise à jour mise en place" >> $mon_script_updater' $mon_log_perso
+      echo "echo mise à jour mise en place" >> $mon_script_updater
     fi
     echo "./$mon_script_fichier $1 $2" >> $mon_script_updater
   fi
@@ -516,7 +516,7 @@ if [[ "$cron_a_appliquer" == "oui" ]]; then
 else
   rm -f mon_cron.txt
 fi
-
+ 
 #### Mise en place éventuelle d'un cron
 if [[ "$script_cron" != "" ]]; then
   mon_cron=`crontab -l`
@@ -596,7 +596,7 @@ if [[ "$script_cron" != "" ]]; then
 fi
  
 #### Vérification/création du fichier conf
-if [[ -f "$mon_script_config" ]]; then
+if [[ -f "$mon_script_config" ]] ; then
   if [[ "$CHECK_MUI" != "" ]]; then
     source $mon_script_langue
     my_title_count=`echo -n "$mui_conf_ok" | sed "s/\\\e\[[0-9]\{1,2\}m//g" | wc -c`
@@ -719,7 +719,8 @@ titre_push=""
  
 ####################################
 ## Fin de configuration
-####################################EOT
+####################################
+EOT
   fi
   if [[ "$CHECK_MUI" != "" ]]; then
     source $mon_script_langue
@@ -734,6 +735,7 @@ titre_push=""
   rm $pid_script
   exit 1
 fi
+ 
 #### Vérification/création du fichier ini
 if [[ -f "$mon_script_ini" ]] ; then
   if [[ "$CHECK_MUI" != "" ]]; then
@@ -836,7 +838,7 @@ if [[ "$display_dependencies" == "yes" ]] || [[ "$affiche_dependances" == "oui" 
       fi
   done
 fi
-
+ 
 #### Ajout de ce script dans le menu
 if [[ -f "/etc/xdg/menus/applications-merged/scripts-scoony.menu" ]] ; then
   useless=1
@@ -845,7 +847,7 @@ else
     source $mon_script_langue
     eval 'echo -e "$mui_creating_menu_entry"' $mon_log_perso
   else
-    eval 'echo "... création du menu"' $mon_log_perso
+    echo "... création du menu"
   fi
   mkdir -p /etc/xdg/menus/applications-merged
   touch "/etc/xdg/menus/applications-merged/scripts-scoony.menu"
@@ -924,104 +926,6 @@ fi
 ## On commence enfin
 ####################
  
-cd /opt/scripts
-
-rm "$pid_script"
-exit 1
-
-### Téléchargement de wsusoffline
-if [[ -d "/opt/wsusoffline" ]]; then
-  eval 'echo -e "[\e[42m\u2713 \e[0m] La dépendance: wsusoffline est installée"' $mon_log_perso
-else
-  eval 'echo -e "[\e[41m\u2717 \e[0m] La dépendance: wsusoffline est non installée"' $mon_log_perso
-  mkdir -p /opt/wsusoffline
-  wget -q -O- "http://download.wsusoffline.net/" > /opt/wsusoffline/download.html &
-  pid=$!
-  spin='-\|/'
-  i=0
-  while kill -0 $pid 2>/dev/null
-  do
-    i=$(( (i+1) %4 ))
-    printf "\rVérification de la version de wsusoffline en ligne... ${spin:$i:1}"
-    sleep .1
-  done
-  printf "$mon_printf" && printf "\r"
-  link_wsusoffline=`cat /opt/wsusoffline/download.html | grep -m 1 "\">Version " | sed 's/">Version .*//' | sed 's/.*a href="//'`
-  file_wsusoffline=`echo $link_wsusoffline | sed 's/.*\(.*\)\//\1/'`
-  version_wsusoffline=`cat /opt/wsusoffline/download.html | grep -m 1 "\">Version " | sed 's/<\/a> (<a href=".*//' | sed 's/.*">Version //'`
-  wget -q $link_wsusoffline -O /opt/wsusoffline/$file_wsusoffline &
-  pid=$!
-  spin='-\|/'
-  i=0
-  while kill -0 $pid 2>/dev/null
-  do
-    i=$(( (i+1) %4 ))
-    printf "\rTéléchargement de wsusoffline $version_wsusoffline ($file_wsusoffline)... ${spin:$i:1}"
-    sleep .1
-  done
-  printf "$mon_printf" && printf "\r"
-  check_zip=`unzip -t /opt/wsusoffline/$file_wsusoffline | grep "No errors detected"`
-  if [[ "$check_zip" != "" ]]; then
-    unzip /opt/wsusoffline/$file_wsusoffline -d /opt/ >> wsusoffline.log &
-    pid=$!
-    spin='-\|/'
-    i=0
-    while kill -0 $pid 2>/dev/null
-    do
-      i=$(( (i+1) %4 ))
-      printf "\rDécompression de wsusoffline... ${spin:$i:1}"
-      sleep .1
-    done
-    printf "$mon_printf" && printf "\r"
-    eval 'echo -e "[\e[42m\u2713 \e[0m] La dépendance: wsusoffline $version_wsusoffline est installée"' $mon_log_perso
-    wget -q -O- "http://downloads.hartmut-buhrmester.de/available-version.txt" > available-version.html &
-    pid=$!
-    spin='-\|/'
-    i=0
-    while kill -0 $pid 2>/dev/null
-    do
-      i=$(( (i+1) %4 ))
-      printf "\rVérification de la version des scripts de wsusoffline en ligne... ${spin:$i:1}"
-      sleep .1
-    done
-    printf "$mon_printf" && printf "\r"
-    version_scripts=`cat available-version.html | awk '{print $1}'`
-    link_scripts=`cat available-version.html | awk '{print $2}'`
-    file_scripts=`echo $link_scripts | sed 's/.*\(.*\)\//\1/'`
-    nom_scripts=`cat available-version.html | awk '{print $4}'`
-    wget -q $link_scripts -O /opt/wsusoffline/$file_scripts &
-    pid=$!
-    spin='-\|/'
-    i=0
-    while kill -0 $pid 2>/dev/null
-    do
-      i=$(( (i+1) %4 ))
-      printf "\rMise à jour des scripts $nom_scripts ($version_scripts) de wsusoffline... ${spin:$i:1}"
-      sleep .1
-    done
-    printf "$mon_printf" && printf "\r"
-    check_zip=`gunzip -t /opt/wsusoffline/$file_scripts`
-    if [[ "$check_zip" == "" ]]; then
-      tar zxf "/opt/wsusoffline/$file_scripts" -C "/opt/wsusoffline/"
-      rm -r -f "/opt/wsusoffline/sh"
-      mv -f "/opt/wsusoffline/$nom_scripts/" "/opt/wsusoffline/sh/"
-      bash /opt/wsusoffline/sh/fix-file-permissions.bash
-      eval 'echo -e "[\e[42m\u2713 \e[0m] La dépendance: maj des scripts $nom_scripts ($version_scripts) de wsusoffline installée"' $mon_log_perso
-    else
-      eval 'echo -e "[\e[41m\u2717 \e[0m] La dépendance: installation de la maj des scripts $nom_scripts ($version_scripts) de wsusoffline en erreur"' $mon_log_perso
-    fi
-  else
-    eval 'echo -e "[\e[41m\u2717 \e[0m] La dépendance: installation de wsusoffline $version_wsusoffline en erreur"' $mon_log_perso
-  fi
-  chmod 777 -R /opt/wsusoffline
-fi
- 
-### Téléchargement des mises à jour
-if [[ -d "/opt/wsusoffline" ]]; then
-  for majId in ${maj// / }; do
-    echo "Windows : $majId - langue : $langue"
-  done
-fi 
  
  
 fin_script=`date`
@@ -1040,9 +944,17 @@ if [[ "$CHECK_MUI" != "" ]]; then
       before=`eval printf "%0.s-" {1..$before_after_count}`
       after=`eval printf "%0.s-" {1..$before_after_count}`
   fi
-  eval 'printf "\e[43m%s%s%s\e[0m\n" "$before" "$mui_end_of_script" "$after"' $mon_log_perso
+  if [[ -f "$fichier_log_perso" ]]; then
+    eval 'printf "\e[43m%s%s%s\e[0m\n" "$before" "$mui_end_of_script" "$after"' $mon_log_perso
+  else
+    printf "\e[43m%s%s%s\e[0m\n" "$before" "$mui_end_of_script" "$after"
+  fi
 else
-  eval 'echo -e "\e[43m -- FIN DE SCRIPT: $fin_script -- \e[0m "' $mon_log_perso
+  if [[ -f "$fichier_log_perso" ]]; then
+    eval 'echo -e "\e[43m -- FIN DE SCRIPT: $fin_script -- \e[0m "' $mon_log_perso
+  else
+    echo -e "\e[43m -- FIN DE SCRIPT: $fin_script -- \e[0m "
+  fi
 fi
 rm "$pid_script"
 

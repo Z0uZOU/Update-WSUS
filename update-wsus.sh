@@ -596,7 +596,7 @@ if [[ "$script_cron" != "" ]]; then
 fi
  
 #### Vérification/création du fichier conf
-if [[ -f $mon_script_config ]] ; then
+if [[ -f "$mon_script_config" ]]; then
   if [[ "$CHECK_MUI" != "" ]]; then
     source $mon_script_langue
     my_title_count=`echo -n "$mui_conf_ok" | sed "s/\\\e\[[0-9]\{1,2\}m//g" | wc -c`

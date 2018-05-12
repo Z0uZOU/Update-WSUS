@@ -7,7 +7,7 @@ CHECK_MUI="ENG"
 ## Commande --help
 mui_menu_help_1="\e[1m$mon_script_base_maj\e[0m ($version)"
 mui_menu_help_2="Goal of this script: $description_eng"
-mui_menu_help_3="Author: Sc00nY <scoonydeus@gmail.com>"
+mui_menu_help_3="Author: Z0uZOU <zouzou.is.reborn@hotmail.fr>"
 mui_menu_help_4=""
 mui_menu_help_5="Usage: \"$mon_script_fichier [--option]\""
 mui_menu_help_6=""

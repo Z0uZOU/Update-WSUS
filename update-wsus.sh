@@ -1,12 +1,13 @@
 #!/bin/bash
-
+ 
 ########################
 ## Script de ZouZOU
 ########################
 ## Installation: wget -q https://raw.githubusercontent.com/Z0uZOU/Update-WSUS/master/update-wsus.sh -O update-wsus.sh && sed -i -e 's/\r//g' update-wsus.sh && shc -f update-wsus.sh -o update-wsus.bin && chmod +x update-wsus.bin && rm -f *.x.c && rm -f update-wsus.sh
 ## Installation: wget -q https://raw.githubusercontent.com/Z0uZOU/Update-WSUS/master/update-wsus.sh -O update-wsus.sh && sed -i -e 's/\r//g' update-wsus.sh && chmod +x update-wsus.sh
+ 
 ## Micro-config
-version="Version: 0.0.0.2" #base du système de mise à jour
+version="Version: 1.0.0.0" #base du système de mise à jour
 description="MAJ du serveur WSUS" #description pour le menu
 description_eng="WSUS Updater" #description pour le menu
 script_github="https://raw.githubusercontent.com/Z0uZOU/Update-WSUS/master/update-wsus.sh" #emplacement du script original
@@ -15,7 +16,7 @@ langue_fr="https://raw.githubusercontent.com/Z0uZOU/Update-WSUS/master/lang/fren
 langue_eng="https://raw.githubusercontent.com/Z0uZOU/Update-WSUS/master/lang/english.lang"
 icone_github="https://raw.githubusercontent.com/Z0uZOU/Update-WSUS/master/.cache-icons/update-wsus.png" #emplacement de l'icône du script
 required_repos="" #ajout de repository
-required_tools="cabextract hashdeep wget xmlstarlet trash-cli" #dépendances du script (APT)
+required_tools="curl cabextract hashdeep wget xmlstarlet trash-cli" #dépendances du script (APT)
 required_tools_pip="" #dépendances du script (PIP)
 script_cron="0 2 * * *" #ne définir que la planification
 verification_process="" #si ces process sont détectés on ne notifie pas (ou ne lance pas en doublon)
@@ -85,7 +86,7 @@ if [[ "$EUID" != "0" ]]; then
     exit 1
   fi
 fi
-
+ 
 #### Fonction pour envoyer des push
 push-message() {
   push_title=$1
@@ -104,7 +105,7 @@ push-message() {
     fi
   done
 }
-
+ 
 #### Vérification de process pour éviter les doublons (commandes externes)
 for process_travail in $verification_process ; do
   process_important=`ps aux | grep $process_travail | sed '/grep/d'`
@@ -132,7 +133,7 @@ for process_travail in $verification_process ; do
     exit 1
   fi
 done
-
+ 
 #### Tests des arguments
 if [[ "$@" == "--version" ]]; then
   echo "$version"
@@ -268,7 +269,13 @@ if [[ "$@" == "--help" ]]; then
     exit 1
   fi
 fi
-
+ 
+### Paramètre du dossier d'installation
+install_dir=""
+if [[ "$@" =~ "--install-dir:" ]];then
+  install_dir=`echo $@ | sed 's/.*--install-dir://' | sed 's/ .*//'`
+fi
+  
 #### je dois charger le fichier conf ici ou trouver une solution (script_url et maj_force)
 dossier_config=`echo "/root/.config/"$mon_script_base`
 if [[ -d "$dossier_config" ]]; then
@@ -276,7 +283,7 @@ if [[ -d "$dossier_config" ]]; then
 else
   mkdir -p $dossier_config
 fi
-
+ 
 if [[ -f "$mon_script_config" ]] ; then
   source $mon_script_config
 else
@@ -287,7 +294,7 @@ else
       maj_force="non"
     fi
 fi
-
+ 
 #### Vérification qu'au reboot les lock soient bien supprimés
 if [[ -f "/etc/rc.local" ]]; then
   test_rc_local=`cat /etc/rc.local | grep -e 'find /root/.config -name "lock-\*" | xargs rm -f'`
@@ -334,9 +341,9 @@ touch $pid_script
 #### Chemin du script
 ## necessaire pour le mettre dans le cron
 cd /opt/scripts
-
+ 
 #### Indispensable aux messages de chargement
-mon_printf="\r                                                            "
+mon_printf="\r                                                                             "
 
 #### Nettoyage obligatoire et push pour annoncer la maj
 if [[ -f "$mon_script_updater" ]] ; then
@@ -365,7 +372,7 @@ if [[ -f "$mon_script_updater" ]] ; then
     fi
   done
 fi
-
+ 
 #### Vérification de version pour éventuelle mise à jour
 version_distante=`wget -O- -q "$script_github" | grep "Version:" | awk '{ print $2 }' | sed -n 1p | awk '{print $1}' | sed -e 's/\r//g' | sed 's/"//g'`
 version_locale=`echo $version | awk '{print $2}'`
@@ -471,13 +478,13 @@ else
     eval 'echo -e "\e[43m-- $mon_script_base_maj - VERSION: $version_locale --\e[0m"' $mon_log_perso
   fi
 fi
-
+ 
 #### Nécessaire pour l'argument --maj-uniquement
 if [[ "$@" == "--maj-uniquement" ]]; then
   rm "$pid_script"
   exit 1
 fi
-
+ 
 #### Vérification de la conformité du cron
 crontab -l > mon_cron.txt
 cron_path=`cat mon_cron.txt | grep "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"`
@@ -670,12 +677,15 @@ script_url=""
 ## mettre oui/non
 affiche_dependances="non"
  
+#### Dossier d'installation de WSUS Offline Update
+dossier_installation="/opt"
+ 
 #### Paramètres des mise à jour
-## w60 (Windows Server 2008, 32-bit), w60-x64 (Windows Server 2008, 64-bit), w61 (Windows 7, 32-bit), w61-x64 (Windows 7 / Server 2008 R2, 64-bit), w62-x64 (Windows Server 2012, 64-bit), w63 (Windows 8.1, 32-bit), w63-x64 (Windows 8.1 / Server 2012 R2, 64-bit), w100 (Windows 10, 32-bit), w100-x64 (Windows 10 / Server 2016, 64-bit)
-maj=""
-## deu (German), enu (English), ara (Arabic), chs (Chinese (Simplified)), cht (Chinese (Traditional)), csy (Czech), dan (Danish), nld (Dutch), fin (Finnish), fra (French), ell (Greek), heb (Hebrew), hun (Hungarian), ita (Italian), jpn (Japanese), kor (Korean), nor (Norwegian), plk (Polish), ptg (Portuguese), ptb (Portuguese (Brazil)), rus (Russian), esn (Spanish), sve (Swedish), trk (Turkish
-langue=""
-
+## w60 (Windows Server 2008, 32-bit), w60-x64 (Windows Server 2008, 64-bit), w61 (Windows 7, 32-bit), w61-x64 (Windows 7 / Server 2008 R2, 64-bit), w62-x64 (Windows Server 2012, 64-bit), w63 (Windows 8.1, 32-bit), w63-x64 (Windows 8.1 / Server 2012 R2, 64-bit), w100 (Windows 10, 32-bit), w100-x64 (Windows 10 / Server 2016, 64-bit), o2k10 (Office 2010, 32-bit), o2k10-x64 (Office 2010, 32-bit and 64-bit), o2k13 (Office 2013, 32-bit), o2k13-x64 (Office 2013, 32-bit and 64-bit), o2k16 (Office 2016, 32-bit), o2k16-x64 (Office 2016, 32-bit and 64-bit), all (All Windows and Office updates, 32-bit and 64-bit), all-x86 (All Windows and Office updates, 32-bit), all-x64 (All Windows and Office updates, 64-bit), all-win (All Windows updates, 32-bit and 64-bit), all-win-x86 (All Windows updates, 32-bit), all-win-x64 (All Windows updates, 64-bit), all-ofc (All Office updates, 32-bit and 64-bit), all-ofc-x86 (All Office updates, 32-bit)
+maj="w61,w61-64"
+## deu (German), enu (English), ara (Arabic), chs (Chinese (Simplified)), cht (Chinese (Traditional)), csy (Czech), dan (Danish), nld (Dutch), fin (Finnish), fra (French), ell (Greek), heb (Hebrew), hun (Hungarian), ita (Italian), jpn (Japanese), kor (Korean), nor (Norwegian), plk (Polish), ptg (Portuguese), ptb (Portuguese (Brazil)), rus (Russian), esn (Spanish), sve (Swedish), trk (Turkish)
+langue="fra"
+ 
 #### Paramètre du push
 ## ces réglages se trouvent sur le site http://www.pushover.net
 token_app=""
@@ -704,11 +714,14 @@ script_url=""
 ## use yes/no
 display_dependencies="no"
  
+#### Installation folder of WSUS Offline Update
+installation_folder="/opt"
+ 
 #### Update parameters
-## w60 (Windows Server 2008, 32-bit), w60-x64 (Windows Server 2008, 64-bit), w61 (Windows 7, 32-bit), w61-x64 (Windows 7 / Server 2008 R2, 64-bit), w62-x64 (Windows Server 2012, 64-bit), w63 (Windows 8.1, 32-bit), w63-x64 (Windows 8.1 / Server 2012 R2, 64-bit), w100         Windows 10, 32-bit), w100-x64 (Windows 10 / Server 2016, 64-bit)
-update=""
-## deu (German), enu (English), ara (Arabic), chs (Chinese (Simplified)), cht (Chinese (Traditional)), csy (Czech), dan (Danish), nld (Dutch), fin (Finnish), fra (French), ell (Greek), heb (Hebrew), hun (Hungarian), ita (Italian), jpn (Japanese), kor (Korean), nor (Norwegian), plk (Polish), ptg (Portuguese), ptb (Portuguese (Brazil)), rus (Russian), esn (Spanish), sve (Swedish), trk (Turkish
-language=""
+## w60 (Windows Server 2008, 32-bit), w60-x64 (Windows Server 2008, 64-bit), w61 (Windows 7, 32-bit), w61-x64 (Windows 7 / Server 2008 R2, 64-bit), w62-x64 (Windows Server 2012, 64-bit), w63 (Windows 8.1, 32-bit), w63-x64 (Windows 8.1 / Server 2012 R2, 64-bit), w100 (Windows 10, 32-bit), w100-x64 (Windows 10 / Server 2016, 64-bit), o2k10 (Office 2010, 32-bit), o2k10-x64 (Office 2010, 32-bit and 64-bit), o2k13 (Office 2013, 32-bit), o2k13-x64 (Office 2013, 32-bit and 64-bit), o2k16 (Office 2016, 32-bit), o2k16-x64 (Office 2016, 32-bit and 64-bit), all (All Windows and Office updates, 32-bit and 64-bit), all-x86 (All Windows and Office updates, 32-bit), all-x64 (All Windows and Office updates, 64-bit), all-win (All Windows updates, 32-bit and 64-bit), all-win-x86 (All Windows updates, 32-bit), all-win-x64 (All Windows updates, 64-bit), all-ofc (All Office updates, 32-bit and 64-bit), all-ofc-x86 (All Office updates, 32-bit)
+update="w61,w61-64"
+## deu (German), enu (English), ara (Arabic), chs (Chinese (Simplified)), cht (Chinese (Traditional)), csy (Czech), dan (Danish), nld (Dutch), fin (Finnish), fra (French), ell (Greek), heb (Hebrew), hun (Hungarian), ita (Italian), jpn (Japanese), kor (Korean), nor (Norwegian), plk (Polish), ptg (Portuguese), ptb (Portuguese (Brazil)), rus (Russian), esn (Spanish), sve (Swedish), trk (Turkish)
+language="fra"
  
 #### Paramètre du push
 ## ces réglages se trouvent sur le site http://www.pushover.net
@@ -775,9 +788,9 @@ else
     eval 'echo "-- Fichier ini créé"' $mon_log_perso
   fi
 fi
-
+ 
 echo "------------------------------------------------------------------------------"
-
+ 
 if [[ "$display_dependencies" == "yes" ]] || [[ "$affiche_dependances" == "oui" ]]; then
   #### VERIFICATION DES DEPENDANCES
   ##########################
@@ -787,7 +800,7 @@ if [[ "$display_dependencies" == "yes" ]] || [[ "$affiche_dependances" == "oui" 
   else
     eval 'echo -e "\e[44m\u2263\u2263  \e[0m \e[44m \e[1mVÉRIFICATION DES DÉPENDANCES  \e[0m \e[44m  \e[0m \e[44m \e[0m \e[34m\u2759\e[0m"' $mon_log_perso
   fi
-
+  
   #### Vérification et installation des repositories (apt)
   for repo in $required_repos ; do
     ppa_court=`echo $repo | sed 's/.*ppa://' | sed 's/\/ppa//'`
@@ -807,7 +820,7 @@ if [[ "$display_dependencies" == "yes" ]] || [[ "$affiche_dependances" == "oui" 
   if [[ "$update_a_faire" == "1" ]]; then
     apt update
   fi
-
+  
   #### Vérification et installation des outils requis si besoin (apt)
   for tools in $required_tools ; do
     check_tool=`dpkg --get-selections | grep -w "$tools"`
@@ -822,7 +835,7 @@ if [[ "$display_dependencies" == "yes" ]] || [[ "$affiche_dependances" == "oui" 
       fi
     fi
   done
-
+  
   #### Vérification et installation des outils requis si besoin (pip)
   for tools_pip in $required_tools_pip ; do
     check_tool=`pip freeze | grep "$tools_pip"`
@@ -926,7 +939,122 @@ fi
 ## On commence enfin
 ####################
  
+cd /opt/scripts
  
+#### Téléchargement de wsusoffline
+if [[ "$install_dir" != "" ]]; then
+  eval 'echo -e "[\e[42m\u2713 \e[0m] Répertoire d\0047installation :" $install_dir' $mon_log_perso
+  if [[ "$dossier_installation" != "" ]] || [[ "$installation_folder" != "" ]]; then
+    if [[ "$dossier_installation" != "" ]]; then
+      eval 'echo -e "[\e[42m\u2713 \e[0m] Le paramètre \"dossier_installation\" est ignoré :" $dossier_installation' $mon_log_perso
+    else
+      eval 'echo -e "[\e[42m\u2713 \e[0m] Le paramètre \"dossier_installation\" est ignoré :" $installation_folder' $mon_log_perso
+    fi
+  fi
+else
+  if [[ "$dossier_installation" != "" ]]; then
+    eval 'echo -e "[\e[42m\u2713 \e[0m] Répertoire d\0047installation :" $dossier_installation' $mon_log_perso
+    install_dir=$dossier_installation
+  else
+    eval 'echo -e "[\e[42m\u2713 \e[0m] Répertoire d\0047installation :" $installation_folder' $mon_log_perso
+    install_dir=$installation_folder
+  fi
+fi
+if [[ -d "$install_dir/wsusoffline" ]]; then
+  eval 'echo -e "[\e[42m\u2713 \e[0m] La dépendance: wsusoffline est installée"' $mon_log_perso
+else
+  eval 'echo -e "[\e[41m\u2717 \e[0m] La dépendance: wsusoffline n\0047est pas installée"' $mon_log_perso
+  mkdir -p "$install_dir/wsusoffline"
+  if [[ "$install_dir" != "/opt" ]]; then
+    ln -sf "$install_dir/wsusoffline" "/opt/"
+  fi
+  wget -q -O- "http://download.wsusoffline.net/" > $install_dir/wsusoffline/download.html &
+  pid=$!
+  spin='-\|/'
+  i=0
+  while kill -0 $pid 2>/dev/null
+  do
+    i=$(( (i+1) %4 ))
+    printf "\rVérification de la version de wsusoffline en ligne... ${spin:$i:1}"
+    sleep .1
+  done
+  printf "$mon_printf" && printf "\r"
+  link_wsusoffline=`cat $install_dir/wsusoffline/download.html | grep -m 1 "\">Version " | sed 's/">Version .*//' | sed 's/.*a href="//'`
+  file_wsusoffline=`echo $link_wsusoffline | sed 's/.*\(.*\)\//\1/'`
+  version_wsusoffline=`cat $install_dir/wsusoffline/download.html | grep -m 1 "\">Version " | sed 's/<\/a> (<a href=".*//' | sed 's/.*">Version //'`
+  wget -q $link_wsusoffline -O $install_dir/wsusoffline/$file_wsusoffline &
+  pid=$!
+  spin='-\|/'
+  i=0
+  while kill -0 $pid 2>/dev/null
+  do
+    i=$(( (i+1) %4 ))
+    printf "\r[  ] Téléchargement de wsusoffline $version_wsusoffline ($file_wsusoffline)... ${spin:$i:1}"
+    sleep .1
+  done
+  printf "$mon_printf" && printf "\r"
+  check_zip=`unzip -t $install_dir/wsusoffline/$file_wsusoffline | grep "No errors detected"`
+  if [[ "$check_zip" != "" ]]; then
+    unzip $install_dir/wsusoffline/$file_wsusoffline -d $install_dir/ >> $install_dir/wsusoffline/wsusoffline.log &
+    pid=$!
+    spin='-\|/'
+    i=0
+    while kill -0 $pid 2>/dev/null
+    do
+      i=$(( (i+1) %4 ))
+      printf "\r[  ] Décompression de wsusoffline... ${spin:$i:1}"
+      sleep .1
+    done
+    printf "$mon_printf" && printf "\r"
+    eval 'echo -e "[\e[42m\u2713 \e[0m] La dépendance: wsusoffline $version_wsusoffline est installée"' $mon_log_perso
+    wget -q -O- "http://downloads.hartmut-buhrmester.de/available-version.txt" > $install_dir/wsusoffline/available-version.html &
+    pid=$!
+    spin='-\|/'
+    i=0
+    while kill -0 $pid 2>/dev/null
+    do
+      i=$(( (i+1) %4 ))
+      printf "\r[  ] Vérification de la version des scripts de wsusoffline en ligne... ${spin:$i:1}"
+      sleep .1
+    done
+    printf "$mon_printf" && printf "\r"
+    version_scripts=`cat $install_dir/wsusoffline/available-version.html | awk '{print $1}'`
+    link_scripts=`cat $install_dir/wsusoffline/available-version.html | awk '{print $2}'`
+    file_scripts=`echo $link_scripts | sed 's/.*\(.*\)\//\1/'`
+    nom_scripts=`cat $install_dir/wsusoffline/available-version.html | awk '{print $4}'`
+    wget -q $link_scripts -O $install_dir/wsusoffline/$file_scripts &
+    pid=$!
+    spin='-\|/'
+    i=0
+    while kill -0 $pid 2>/dev/null
+    do
+      i=$(( (i+1) %4 ))
+      printf "\r[  ] Mise à jour des scripts $nom_scripts ($version_scripts) de wsusoffline... ${spin:$i:1}"
+      sleep .1
+    done
+    printf "$mon_printf" && printf "\r"
+    check_zip=`gunzip -t $install_dir/wsusoffline/$file_scripts`
+    if [[ "$check_zip" == "" ]]; then
+      tar zxf "$install_dir/wsusoffline/$file_scripts" -C "$install_dir/wsusoffline/"
+      rm -r -f "$install_dir/wsusoffline/sh"
+      mv -f "$install_dir/wsusoffline/$nom_scripts/" "$install_dir/wsusoffline/sh/"
+      bash $install_dir/wsusoffline/sh/fix-file-permissions.bash
+      eval 'echo -e "[\e[42m\u2713 \e[0m] La dépendance: maj des scripts $nom_scripts ($version_scripts) de wsusoffline installée"' $mon_log_perso
+    else
+      eval 'echo -e "[\e[41m\u2717 \e[0m] La dépendance: installation de la maj des scripts $nom_scripts ($version_scripts) de wsusoffline en erreur"' $mon_log_perso
+    fi
+  else
+    eval 'echo -e "[\e[41m\u2717 \e[0m] La dépendance: installation de wsusoffline $version_wsusoffline en erreur"' $mon_log_perso
+  fi
+  chmod 777 -R "$install_dir/wsusoffline/"
+fi
+ 
+### Téléchargement des mises à jour
+if [[ -d "$install_dir/wsusoffline" ]]; then
+  for majId in ${maj//,/ }; do
+    echo "Windows : $majId - langue : $langue"
+  done
+fi
  
 fin_script=`date`
 if [[ "$CHECK_MUI" != "" ]]; then

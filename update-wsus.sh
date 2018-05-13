@@ -7,7 +7,7 @@
 ## Installation: wget -q https://raw.githubusercontent.com/Z0uZOU/Update-WSUS/master/update-wsus.sh -O update-wsus.sh && sed -i -e 's/\r//g' update-wsus.sh && chmod +x update-wsus.sh
  
 ## Micro-config
-version="Version: 1.0.0.0" #base du système de mise à jour
+version="Version: 0.0.0.3" #base du système de mise à jour
 description="MAJ du serveur WSUS" #description pour le menu
 description_eng="WSUS Updater" #description pour le menu
 script_github="https://raw.githubusercontent.com/Z0uZOU/Update-WSUS/master/update-wsus.sh" #emplacement du script original
